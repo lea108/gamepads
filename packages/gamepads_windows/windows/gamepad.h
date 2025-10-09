@@ -11,7 +11,6 @@ struct Gamepad {
   std::string name;
   int num_buttons;
   bool alive;
-  std::optional<std::thread> read_theread;
 };
 
 struct Event {
@@ -32,6 +31,7 @@ class Gamepads {
 
  public:
   std::map<UINT, Gamepad> gamepads;
+  std::map<UINT, std::thread> threads;
   std::optional<std::function<void(Gamepad* gamepad, const Event& event)>>
       event_emitter;
   void update_gamepads();
