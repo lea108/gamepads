@@ -93,7 +93,6 @@ void Gamepads::read_gamepad(Gamepad* gamepad) {
       }
     } else {
       std::cout << "Fail to listen to gamepad " << joy_id << std::endl;
-      gamepad->alive = false;
       gamepads.erase(joy_id);
     }
   }
@@ -101,9 +100,8 @@ void Gamepads::read_gamepad(Gamepad* gamepad) {
 
 void Gamepads::connect_gamepad(UINT joy_id, std::string name, int num_buttons) {
   gamepads[joy_id] = {joy_id, name, num_buttons, true};
-  std::thread read_thread(
+  gamepads[joy_id].read_theread = std::thread(
       [this, joy_id]() { read_gamepad(&gamepads[joy_id]); });
-  read_thread.detach();
 }
 
 void Gamepads::update_gamepads() {
@@ -120,6 +118,9 @@ void Gamepads::update_gamepads() {
         if (gamepad->name != name) {
           std::cout << "Updated gamepad " << joy_id << std::endl;
           gamepad->alive = false;
+          if (gamepad->read_theread.has_value() && gamepad->read_theread.value().joinable()) {
+            gamepad->read_theread.value().join();
+          }
           gamepads.erase(joy_id);
 
           connect_gamepad(joy_id, name, num_buttons);

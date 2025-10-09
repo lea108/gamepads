@@ -10,6 +10,7 @@ struct Gamepad {
   std::string name;
   int num_buttons;
   bool alive;
+  std::optional<std::thread> read_theread;
 };
 
 struct Event {
