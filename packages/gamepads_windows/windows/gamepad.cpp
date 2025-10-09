@@ -94,6 +94,7 @@ void Gamepads::read_gamepad(Gamepad* gamepad) {
     } else {
       std::cout << "Fail to listen to gamepad " << joy_id << std::endl;
       gamepads.erase(joy_id);
+      break;
     }
   }
 }
