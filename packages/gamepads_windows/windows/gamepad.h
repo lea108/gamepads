@@ -1,10 +1,6 @@
 
 #include <map>
-#include <winrt/Windows.Gaming.Input.h>
 #include <wtypes.h>
-
-using namespace winrt;
-using namespace Windows::Gaming;
 
 #include <windows.h>
 #include <functional>
@@ -17,7 +13,6 @@ using namespace Windows::Gaming;
 struct GamepadData {
   std::string id;
   std::string name;
-  int num_buttons;
   bool stop_thead;
   bool alive;
 };
@@ -33,12 +28,12 @@ class Gamepads {
  private:
   std::list<GamepadData*> gamepads;
 
-  GameInputCallbackToken* deviceCallbackToken;
-  //GameInputCallbackToken* readingCallbackToken;
-  void read_gamepad(GamepadData* gamepad, IGameInputDevice* device);
+  GameInput::v3::GameInputCallbackToken* deviceCallbackToken;
+  GameInput::v3::GameInputCallbackToken* readingCallbackToken;
+  void read_gamepad(GamepadData* gamepad, GameInput::v3::IGameInputDevice* device);
 
-  void on_gamepad_connected(IGameInputDevice* device);
-  void on_gamepad_disconnected(IGameInputDevice* device);
+  void on_gamepad_connected(GameInput::v3::IGameInputDevice* device);
+  void on_gamepad_disconnected(GameInput::v3::IGameInputDevice* device);
 
  public:
   std::optional<std::function<void(GamepadData* gamepad, const Event& event)>>
@@ -49,8 +44,3 @@ class Gamepads {
 };
 
 extern Gamepads gamepads;
-
-std::optional<LRESULT> CALLBACK GamepadListenerProc(HWND hwnd,
-                                                    UINT uMsg,
-                                                    WPARAM wParam,
-                                                    LPARAM lParam);

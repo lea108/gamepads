@@ -10,11 +10,11 @@
 #include <GameInput.h>
 #include <iomanip>
 #include <sstream>
-#pragma comment(lib, "GameInput.lib")
+//#pragma comment(lib, "GameInput.lib")
 
 Gamepads gamepads;
 
-using namespace Windows::Gaming;
+using namespace GameInput::v3;
 
 
 static IGameInput* g_gameInput = nullptr;
@@ -81,7 +81,7 @@ std::list<Event> diff_states(const GameInputDeviceInfo& device_info,
         {time, "analog", "rightTrigger", current.rightTrigger});
   }
   if (old.buttons != current.buttons) {
-    for (uint32_t i = 0; i < device_info.controllerButtonCount; ++i) {
+    for (uint32_t i = 0; i < 14; ++i) {
       bool was_pressed = old.buttons & (1 << i);
       bool is_pressed = current.buttons & (1 << i);
       if (was_pressed != is_pressed) {
@@ -105,59 +105,54 @@ bool are_states_different(const GameInputGamepadState& a, const GameInputGamepad
     a.buttons != b.buttons;
 }
 
-void OnDeviceEvent(
-          GameInputCallbackToken callbackToken,
-         void* context,
-         IGameInputReading* reading,
-         bool hasOverrunOccurred
-) {
-  //auto* self = static_cast<Gamepads*>(context);
-  std::cout << "Gamepad event" << std::endl;
-}
-
 void Gamepads::init()
 {
-  GameInputCreate(&g_gameInput);
+  auto hr = GameInputCreate(&g_gameInput);
+  std::cout << "GameInputCreate " <<  std::hex << std::setw(8) << std::setfill('0') << hr << std::dec << std::endl;
+  std::cout << "GameInput " << (g_gameInput == nullptr ? "null" : "not null")  << std::endl;
 
   if (g_gameInput != nullptr) {
     // Register listener for gamepad events
-    if (g_gameInput != nullptr) {
-      g_gameInput->RegisterDeviceCallback(
-        nullptr, // All devices
-        GameInputKindGamepad,
-        GameInputDeviceConnected,
-        GameInputAsyncEnumeration,
-        static_cast<void*>(this),
-        [](
-          _In_ GameInputCallbackToken callbackToken,
-          _In_ void * context,
-          _In_ IGameInputDevice * device,
-          _In_ uint64_t timestamp,
-          _In_ GameInputDeviceStatus currentStatus,
-          _In_ GameInputDeviceStatus previousStatus
-        ) {
-          auto* self = static_cast<Gamepads*>(context);
-          if (currentStatus & GameInputDeviceConnected) {
-            self->on_gamepad_connected(device);
-          } else {
-            self->on_gamepad_disconnected(device);
-          }
-        },
-        this->deviceCallbackToken
-      );
-    }
+    hr = g_gameInput->RegisterDeviceCallback(
+      nullptr, // All devices
+      GameInputKindGamepad,
+      GameInputDeviceConnected,
+      GameInputAsyncEnumeration,
+      static_cast<void*>(this),
+      [](
+        _In_ GameInputCallbackToken callbackToken,
+        _In_ void * context,
+        _In_ IGameInputDevice * device,
+        _In_ uint64_t timestamp,
+        _In_ GameInputDeviceStatus currentStatus,
+        _In_ GameInputDeviceStatus previousStatus
+      ) {
+        auto* self = static_cast<Gamepads*>(context);
+        if (currentStatus & GameInputDeviceConnected) {
+          self->on_gamepad_connected(device);
+        } else {
+          self->on_gamepad_disconnected(device);
+        }
+      },
+      this->deviceCallbackToken
+    );
+    std::cout << "RegisterDeviceCallback " <<  std::hex << std::setw(8) << std::setfill('0') << hr << std::dec << std::endl;
 
-    /*
-    // Currently doesn't produce any data, but perhaps in future, it can be used instead of read_thread.
-    g_gameInput->RegisterReadingCallback(
+    hr = g_gameInput->RegisterReadingCallback(
         nullptr, // Any device,
         GameInputKindGamepad,
-        0.0,
         static_cast<void*>(this),
-        OnDeviceEvent,
+        [] (
+          GameInputCallbackToken callbackToken,
+          void* context,
+          IGameInputReading* reading
+        ) {
+          // auto* self = static_cast<Gamepads*>(context);
+          std::cout << "Gamepad event" << std::endl;
+        },
         this->readingCallbackToken
     );
-    */
+    std::cout << "RegisterReadingCallback " <<  std::hex << std::setw(8) << std::setfill('0') << hr << std::dec << std::endl;
   }
 }
 
@@ -165,8 +160,8 @@ void Gamepads::stop()
 {
   if (g_gamepad) g_gamepad->Release();
   if (g_gameInput) {
-    g_gameInput->UnregisterCallback(*this->deviceCallbackToken, 5000);
-    //g_gameInput->UnregisterCallback(*this->readingCallbackToken, 5000);
+    g_gameInput->UnregisterCallback(*this->deviceCallbackToken);
+    g_gameInput->UnregisterCallback(*this->readingCallbackToken);
     g_gameInput->Release();
   }
 
@@ -190,29 +185,30 @@ std::list<GamepadData*> Gamepads::get_gamepads() {
 
 void Gamepads::on_gamepad_connected(IGameInputDevice * device)
 {
-  auto info = device->GetDeviceInfo();
+  const GameInputDeviceInfo* info;
+  device->GetDeviceInfo(&info);
   if (info == nullptr) {
     std::cerr << "Gamepad connected but failed to read info" << std::endl;
     return;
   }
   auto gp = new GamepadData();
   gp->id = AppLocalDeviceIdToString(info->deviceId);
-  gp->name = info->displayName != nullptr && info->displayName->data != nullptr ? info->displayName->data : "";
-  gp->num_buttons = info->controllerButtonCount;
+  gp->name = info->displayName != nullptr ? info->displayName : "";
   gp->stop_thead = false;
   gp->alive = true;
   this->gamepads.push_back(gp);
 
   std::cout << "Gamepad connected: " << gp->id << " : " << gp->name << std::endl;
 
-  std::thread read_thread(
-      [this, gp, device]() { this->read_gamepad(gp, device); });
-  read_thread.detach();
+//  std::thread read_thread(
+//      [this, gp, device]() { this->read_gamepad(gp, device); });
+//  read_thread.detach();
 }
 
 void Gamepads::on_gamepad_disconnected(IGameInputDevice * device)
 {
-  auto info = device->GetDeviceInfo();
+  const GameInputDeviceInfo* info;
+  device->GetDeviceInfo(&info);
   if (info == nullptr) {
     std::cerr << "Gamepad disconnected but failed to read info" << std::endl;
     return;
@@ -235,7 +231,10 @@ void Gamepads::on_gamepad_disconnected(IGameInputDevice * device)
 
 
 void Gamepads::read_gamepad(GamepadData* gamepad, IGameInputDevice* device) {
+  /*
+  GameInputDeviceInfo* info;
   auto info = device->GetDeviceInfo();
+  device->GetDeviceInfo(&info);
 
   GameInputGamepadState previous_state;
   while (info != nullptr && !gamepad->stop_thead && g_gameInput != nullptr) {
@@ -267,4 +266,5 @@ void Gamepads::read_gamepad(GamepadData* gamepad, IGameInputDevice* device) {
     std::cout << "Gamepad thread exit (due to error state) " << gamepad->id << std::endl;
     gamepad->alive = false;
   }
+    */
 }
