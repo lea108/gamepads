@@ -101,8 +101,8 @@ void Gamepads::read_gamepad(Gamepad* gamepad) {
 
 void Gamepads::connect_gamepad(UINT joy_id, std::string name, int num_buttons) {
   gamepads[joy_id] = {joy_id, name, num_buttons, true};
-  threads[joy_id] = std::thread(
-      [this, joy_id]() { read_gamepad(&gamepads[joy_id]); });
+  threads[joy_id] =
+      std::thread([this, joy_id]() { read_gamepad(&gamepads[joy_id]); });
 }
 
 void Gamepads::update_gamepads() {
