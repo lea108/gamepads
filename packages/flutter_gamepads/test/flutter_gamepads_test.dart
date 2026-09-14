@@ -214,15 +214,21 @@ void main() {
   final focusIntentsTestShortcuts = {
     // Only use buttons with same name in GamepadButton as in gamepads_windows,
     // or the test will break.
-    GamepadActivatorButton.dpadLeft(): TestIntent(),
-    GamepadActivatorButton.dpadUp(): PreviousFocusIntent(),
-    GamepadActivatorButton.dpadDown(): NextFocusIntent(),
-    GamepadActivatorButton.x(): DirectionalFocusIntent(TraversalDirection.up),
-    GamepadActivatorButton.y(): DirectionalFocusIntent(TraversalDirection.left),
-    GamepadActivatorButton.b(): DirectionalFocusIntent(
+    const GamepadActivatorButton.dpadLeft(): TestIntent(),
+    const GamepadActivatorButton.dpadUp(): const PreviousFocusIntent(),
+    const GamepadActivatorButton.dpadDown(): const NextFocusIntent(),
+    const GamepadActivatorButton.x(): const DirectionalFocusIntent(
+      TraversalDirection.up,
+    ),
+    const GamepadActivatorButton.y(): const DirectionalFocusIntent(
+      TraversalDirection.left,
+    ),
+    const GamepadActivatorButton.b(): const DirectionalFocusIntent(
       TraversalDirection.right,
     ),
-    GamepadActivatorButton.a(): DirectionalFocusIntent(TraversalDirection.down),
+    const GamepadActivatorButton.a(): const DirectionalFocusIntent(
+      TraversalDirection.down,
+    ),
   };
 
   for (final MapEntry(key: activator, value: intent)
