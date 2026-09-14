@@ -297,7 +297,6 @@ void main() {
       }
 
       await tester.pumpAndSettle();
-      await tester.pumpAndSettle();
 
       // Only Focus intents should cause onBeforeIntent to be called
       final isFocusIntent =
